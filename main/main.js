@@ -9,79 +9,60 @@ function printReceipt(inputs) {
 function countBarcode(barcode) {
   let item = {};
   barcode.forEach((value) => {
-    if (item[value] === undefined) {
-      item[value] = 1;
+    if (value.indexOf('-') == -1) {
+      if (item[value] == undefined) {
+        item[value] = 1;
+      } else {
+        item[value]++;
+      }
     } else {
-      item[value]++;
+      let _val = value.split('-')[0];
+      let _count = Number(value.split('-')[1]);
+      if (item[_val] == undefined) {
+        item[_val] = _count;
+      } else {
+        item[_val] += _count;
+      }
     }
   })
   return item;
 }
 
 function createReceipt(items) {
-  let totalMoney = 0;
-  let receiptContent = '';
-  let saveGoodInfo = null;
-  receiptContent += '***<没钱赚商店>收据***\n';
+  let expextedMoney  = 0;
+  let actualMoney  = 0;
+  let receiptContent = '***<没钱赚商店>收据***\n';
 
-  for(const id in items) {
-    const item;
-    let isSaveGood = isSaveGood(id)
-    if(isSaveGood){
-      saveGoodInfo = id.split("-");
-      item = findItemById(saveGoodInfo[0]);
-    }else{
-      item = findItemById(id);
-    }
+  for(const barcode in items) {
+    let item = findItemByBarcode(barcode);
 
-    if (item !== undefined && isSaveGood) {
-      let saveMoney = item['price']
-      receiptContent += "名称：" + item['name'] + "数量：" + saveGoodInfo[1] + "单价" + item['price'] + "小计：" + saveMoney  + '\n';
-      totalMoney += item['price'] * saveGoodInfo[1];
-    } else if(item !== undefined && !isSaveGood){
-      receiptContent += "名称：" + item['name'] + "数量：" + items[id] + "单价" + item['price'] + "小计：" + item[id] * item['price'] + '\n';
-      totalMoney += item['price'] * items[id];
-    } else {
-      receiptContent = '[ERROR]: not found item[id=' + id + '].Please input correctly.'
-      return receiptContent;
+
+    if(item != undefined) {
+      let littleCount;
+      let itemBarcode = Number(items[barcode]);
+      if(isPromotionGood(barcode, 'BUY_TWO_GET_ONE_FREE')){
+        littleCount = (itemBarcode - Math.floor(itemBarcode/3)) * item['price']
+      }else {
+        littleCount = item['price']*itemBarcode;
+      }
+
+      receiptContent += `名称：${item['name']}，数量：${itemBarcode}${item['unit']}，单价：${item['price'].toFixed(2)}(元)，小计：${littleCount.toFixed(2)}(元)\n`
+      expextedMoney += item['price']*itemBarcode;
+      actualMoney += littleCount;
     }
   }
-  receiptContent += '----------------------\n';
-  if(isSaveGood){
-    receiptContent += '总计： ' + totalMoney.toFixed(2) + '(元)\n';
-    receiptContent += '节省： ' + saveMoney.toFixed(2) + '(元)\n';
-  }else{
-    receiptContent += '总计： ' + totalMoney.toFixed(2) + '(元)\n';
-  }
-  receiptContent += '**********************';
+  receiptContent += `----------------------
+总计：${actualMoney.toFixed(2)}(元)
+节省：${(expextedMoney - actualMoney).toFixed(2)}(元)
+**********************`
 
   return receiptContent;
 }
 
-function findItemById(id) {
-  let item;
+function findItemByBarcode(barcode) {
   const dataSource = loadAllItems();
-  dataSource.forEach((value, index) => {
-    if (id == value['id']) {
-      item = {'id': value['id'], 'name': value['name'],'unit': value['unit'],'price': value['price']};
-    }
-  })
+  let item = dataSource.filter((value) => {
+    return barcode === value['barcode']
+  })[0];
   return item;
-}
-
-function isSaveGood(barcode) {
-  const saveGoodsDB = loadPromotions();
-  let newArr = barcode.split("-");
-  if(newArr.length > 1){
-    let isSaveGood = saveGoodsDB.forEach(value => {
-      for (let i = 0; i < value.barcodes.length; i++) {
-        if(value.barcodes[i] === barcode){
-          return true
-        }
-      }
-    });
-    return isSaveGood;
-  }else{
-    return false;
-  }
 }
