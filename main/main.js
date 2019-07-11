@@ -9,7 +9,7 @@ function printReceipt(inputs) {
 function countGoods(barcode) {
   const item = {};
   barcode.forEach((value) => {
-    if (value.indexOf('-') == -1) {
+    if (value.indexOf('-') === -1) {
       if (item[value] === undefined) {
         item[value] = 1;
       } else {
@@ -41,7 +41,7 @@ function createReceipt(items) {
       let subtotal = null;
       let itemCount = Number(items[barcode]);
       if(isPromotionGood(barcode, 'BUY_TWO_GET_ONE_FREE')){
-        subtotal = (itemCount - Math.floor(itemCount/3)) * item['price']
+        subtotal = (itemCount - Math.floor(itemCount / 3)) * item['price']
       }else {
         subtotal = item['price'] * itemCount;
       }
@@ -49,6 +49,8 @@ function createReceipt(items) {
       receiptContent += `名称：${item['name']}，数量：${itemCount}${item['unit']}，单价：${item['price'].toFixed(2)}(元)，小计：${subtotal.toFixed(2)}(元)\n`
       expextedMoney += item['price'] * itemCount;
       actualMoney += subtotal;
+    }else{
+      receipts = '[Error]: barcode not exist';
     }
   }
   receiptContent += `----------------------
